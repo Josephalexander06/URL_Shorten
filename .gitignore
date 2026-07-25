@@ -1,0 +1,3 @@
+.env/
+backend/utils/__pycache__/
+backend/__pycache__/
