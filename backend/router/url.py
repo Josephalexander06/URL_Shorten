@@ -6,6 +6,7 @@ import string
 import hashlib
 import models
 from fastapi.responses import RedirectResponse
+import time
 
 router = APIRouter(
     prefix="/url",
@@ -25,7 +26,7 @@ def url_to_base62_hash (url:str)-> str:
     base = len(BASE62_ALPHA)
     while url_int > 0:
         url_int , rem = divmod(url_int, base)
-        arr.routerend(BASE62_ALPHA[rem])
+        arr.append(BASE62_ALPHA[rem])
     
     return "".join(reversed(arr))
 
@@ -45,11 +46,13 @@ async def create_url(url:schema.Create_Url,db:Session = Depends(get_db)):
         return found_url
 
     url_slug = url_to_base62_hash(url.org_url)
-    url.short_url = url_slug
+
+    while db.query(models.URL).filter(models.URL.shorten_url == url_slug).first():
+          url_slug = url_to_base62_hash(url.org_url + str(time.time()))
 
     db_url = models.URL(
         original_url = url.org_url,
-        shorten_url = url.short_url
+        shorten_url = url_slug
     )
 
     db.add(db_url)
