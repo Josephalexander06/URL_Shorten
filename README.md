@@ -32,6 +32,7 @@ This project was built as a backend web development learning exercise to underst
 - [x] **Collision Handling**: Automatically resolves hash collisions by appending timestamps if a slug conflict occurs.
 - [x] **HTTP Redirection (`GET /url/{short}`)**: Seamlessly redirects the user from the short URL slug to the original destination with a `307 Temporary Redirect`.
 - [x] **List All URLs (`GET /url/`)**: Fetches all shortened URL mappings from the database.
+- [x] **📊 Click Analytics & Visitor Tracking**: Tracks click count per URL and records visitor IP address (`X-Forwarded-For` aware) and User-Agent browser/OS metadata.
 - [x] **Environment Configuration**: Safe credential handling using `.env` files parsed by `pydantic-settings`.
 
 ---
@@ -39,10 +40,6 @@ This project was built as a backend web development learning exercise to underst
 ## 🚀 Pending Features & Future Roadmap
 
 These are features planned to enhance the project further:
-
-- [ ] **📊 Click Analytics & Visitor Tracking**:
-  - Track total click count per shortened URL.
-  - Store visitor metadata (timestamp, IP address, User-Agent browser/device info).
 - [ ] **✏️ Custom URL Aliases**:
   - Allow users to specify custom short slugs (e.g., `/url/my-custom-name`).
 - [ ] **⏱️ URL Expiration / TTL**:

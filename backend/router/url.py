@@ -1,10 +1,3 @@
-from python_multipart import multipart
-from fastapi import requests
-from fastapi import requests
-from fastapi import requests
-from fastapi import requests
-from fastapi import requests
-from fastapi import requests
 from fastapi import APIRouter, HTTPException, status, Depends,Request
 from utils import schema 
 from utils.database import get_db
@@ -15,6 +8,8 @@ import models
 from fastapi.responses import RedirectResponse
 import time
 from datetime import datetime
+from user_agents import parse
+
 
 router = APIRouter(
     prefix="/url",
@@ -71,11 +66,20 @@ async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(
           url_slug = url_to_base62_hash(url.org_url + str(time.time()))
     
     client_ip = find_ip_address(request)
+    info = request.headers.get("User-Agent", "")
+    user_agent = parse(info)
+
+    ua = ", ".join([
+        user_agent.browser.family,
+        user_agent.os.family
+    ])
+    
 
     db_url = models.URL(
         original_url = url.org_url,
         shorten_url = url_slug,
         ip_address = client_ip,
+        user_agent_info = ua,
         count = 1
     )
 
@@ -103,19 +107,22 @@ def get_url(short:str,request: Request,db:Session=Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Not found")
     
     client_ip = find_ip_address(request)
+    info = request.headers.get("User-Agent", "")
+    user_agent = parse(info)
+
+    ua = ", ".join([
+        user_agent.browser.family,
+        user_agent.os.family
+    ])
     
     found_url.count = found_url.count + 1
     found_url.ip_address = client_ip
     found_url.access_at =datetime.now()
+    found_url.user_agent_info = ua
 
     db.add(found_url)
     db.commit()
 
-   
-    print(find_ip_address(request))
-
-    if not found_url:
-        raise HTTPException(status_code=404,detail="Not found")
 
     redirect_url = found_url.original_url
     return RedirectResponse(url = redirect_url,status_code=status.HTTP_307_TEMPORARY_REDIRECT)

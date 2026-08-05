@@ -9,7 +9,8 @@ class URL(Base):
     original_url = Column(String,nullable=False)
     shorten_url = Column(String,nullable=False)
     count = Column(Integer)
-    ip_address = Column(String,nullable=False)
+    ip_address = Column(String)
+    user_agent_info = Column(String)
     access_at = Column(TIMESTAMP(timezone=True),server_default=text("now()"))
     created_at = Column(TIMESTAMP(timezone=True),server_default=text('now()'))
 
