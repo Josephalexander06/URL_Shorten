@@ -1,8 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 
 
 class Create_Url(BaseModel):
-    org_url : str
+    org_url : HttpUrl
     short_url : str | None = None
     
     class Config:

@@ -1,8 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from .config import settings
 
-DB_URL = "postgresql://postgres:123456@localhost/urlshorten"
+DB_URL = settings.DB_URL
 
 engine = create_engine(DB_URL)
 
