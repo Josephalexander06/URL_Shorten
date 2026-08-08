@@ -72,7 +72,7 @@ async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(
             raise HTTPException(status_code=409,detail="Custom url already exists")
 
         db_url = models.URL(
-            original_url = url.org_url,
+            original_url = str(url.org_url),
             shorten_url = url.custom_url,
             ip_address = client_ip,
             user_agent_info = ua,
@@ -106,7 +106,7 @@ async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(
     
 
     db_url = models.URL(
-        original_url = url.org_url,
+        original_url = str(url.org_url),
         shorten_url = url_slug,
         ip_address = client_ip,
         user_agent_info = ua,
