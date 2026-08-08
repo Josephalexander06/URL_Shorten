@@ -1,9 +1,14 @@
-from pydantic import BaseModel, HttpUrl
-
+from pydantic import BaseModel, HttpUrl, Field
+from typing import Optional
 
 class Create_Url(BaseModel):
-    org_url : str = HttpUrl
-    short_url : str | None = None
+    org_url : HttpUrl
+    custom_url : Optional[str] = Field(
+        default=None,
+        min_length=3,
+        max_length=50,
+        pattern=r"^[a-zA-Z0-9_-]+$"
+    )
     
     class Config:
         from_attribute = True

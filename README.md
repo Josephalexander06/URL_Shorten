@@ -29,6 +29,7 @@ This project was built as a backend web development learning exercise to underst
 ## ✨ Features Implemented
 
 - [x] **URL Shortening (`POST /url/`)**: Takes a long original URL, checks if it already exists in the database, and if not, generates a unique Base62 slug.
+- [x] **✏️ Custom URL Aliases**: Allows users to specify optional custom URL slugs with regex validation (`^[a-zA-Z0-9_-]+$`), length boundaries (3-50 chars), system reserved-word protection (`docs`, `admin`, `redoc`), and database uniqueness constraints.
 - [x] **Collision Handling**: Automatically resolves hash collisions by appending timestamps if a slug conflict occurs.
 - [x] **HTTP Redirection (`GET /url/{short}`)**: Seamlessly redirects the user from the short URL slug to the original destination with a `307 Temporary Redirect`.
 - [x] **List All URLs (`GET /url/`)**: Fetches all shortened URL mappings from the database.
@@ -40,8 +41,6 @@ This project was built as a backend web development learning exercise to underst
 ## 🚀 Pending Features & Future Roadmap
 
 These are features planned to enhance the project further:
-- [ ] **✏️ Custom URL Aliases**:
-  - Allow users to specify custom short slugs (e.g., `/url/my-custom-name`).
 - [ ] **⏱️ URL Expiration / TTL**:
   - Set optional expiration dates for short links (e.g. valid for 7 days).
 - [ ] **🔐 User Authentication (JWT)**:
@@ -80,7 +79,7 @@ url-shorten/
 
 | Method | Endpoint | Description | Sample Body |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/url/` | Create a shortened URL | `{"org_url": "https://example.com/very/long/url"}` |
+| `POST` | `/url/` | Create a shortened URL (auto Base62 or custom slug) | `{"org_url": "https://example.com", "custom_url": "my-alias"}` |
 | `GET` | `/url/` | Retrieve all shortened URLs | *None* |
 | `GET` | `/url/{short}` | Redirect to original URL | *None* |
 

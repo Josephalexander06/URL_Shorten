@@ -1,3 +1,4 @@
+from utils import database
 from fastapi import APIRouter, HTTPException, status, Depends,Request
 from utils import schema 
 from utils.database import get_db
@@ -48,23 +49,8 @@ def find_ip_address(request):
 @router.post("/",status_code=status.HTTP_201_CREATED)
 async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(get_db)):
 
-    find_url = db.query(models.URL).filter(models.URL.original_url == str(url.org_url)).first()
-
-    if find_url:
-
-        found_url = {
-            "id":find_url.id,
-            "original_url":find_url.original_url,
-            "Shorten_url":find_url.shorten_url
-        }
-
-        return found_url
-
-    url_slug = url_to_base62_hash(url.org_url)
-
-    while db.query(models.URL).filter(models.URL.shorten_url == url_slug).first():
-          url_slug = url_to_base62_hash(url.org_url + str(time.time()))
-    
+    reserved_words = ["docs","admin","url","redoc"]
+        
     client_ip = find_ip_address(request)
     info = request.headers.get("User-Agent", "")
     user_agent = parse(info)
@@ -73,6 +59,50 @@ async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(
         user_agent.browser.family,
         user_agent.os.family
     ])
+
+    if url.custom_url:
+    
+        if url.custom_url.lower() in reserved_words:
+
+            raise HTTPException(status_code=400,detail="Custom url reserved words cant use")
+
+        check_custom_url = db.query(models.URL).filter(models.URL.shorten_url == url.custom_url).first()
+
+        if check_custom_url:
+            raise HTTPException(status_code=409,detail="Custom url already exists")
+
+        db_url = models.URL(
+            original_url = url.org_url,
+            shorten_url = url.custom_url,
+            ip_address = client_ip,
+            user_agent_info = ua,
+            count = 1
+            )
+
+        db.add(db_url)
+        db.commit()
+        db.refresh(db_url)
+
+        return db_url  
+
+
+    find_url = db.query(models.URL).filter(models.URL.original_url == str(url.org_url)).first()
+
+    if find_url:
+
+        found_url = {
+            "id":find_url.id,
+            "original_url":find_url.original_url,
+            "shorten_url":find_url.shorten_url
+        }
+
+        return found_url
+    
+    
+    url_slug = url_to_base62_hash(str(url.org_url))
+
+    while db.query(models.URL).filter(models.URL.shorten_url == url_slug).first():
+          url_slug = url_to_base62_hash(str(url.org_url) + str(time.time()))
     
 
     db_url = models.URL(
@@ -89,6 +119,7 @@ async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(
 
     return db_url  
 
+
 @router.get("/")
 async def get_all_urls(db:Session=Depends(get_db)):
     get_url  = db.query(models.URL).all()
@@ -96,6 +127,7 @@ async def get_all_urls(db:Session=Depends(get_db)):
     if not get_url:
         raise HTTPException(status_code=404,detail="Not Found")
     return get_url
+
 
 @router.get("/{short}")
 def get_url(short:str,request: Request,db:Session=Depends(get_db)):
