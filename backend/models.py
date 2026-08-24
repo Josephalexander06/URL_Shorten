@@ -12,5 +12,6 @@ class URL(Base):
     ip_address = Column(String)
     user_agent_info = Column(String)
     access_at = Column(TIMESTAMP(timezone=True),server_default=text("now()"))
+    expire_at = Column(TIMESTAMP(timezone=True))
     created_at = Column(TIMESTAMP(timezone=True),server_default=text('now()'))
 

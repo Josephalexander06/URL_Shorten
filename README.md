@@ -35,14 +35,14 @@ This project was built as a backend web development learning exercise to underst
 - [x] **List All URLs (`GET /url/`)**: Fetches all shortened URL mappings from the database.
 - [x] **📊 Click Analytics & Visitor Tracking**: Tracks click count per URL and records visitor IP address (`X-Forwarded-For` aware) and User-Agent browser/OS metadata.
 - [x] **Environment Configuration**: Safe credential handling using `.env` files parsed by `pydantic-settings`.
+- [x] **⏱️ URL Expiration / TTL**: Set optional expiration dates for short links (e.g. valid for 7 days).
 
 ---
 
 ## 🚀 Pending Features & Future Roadmap
 
 These are features planned to enhance the project further:
-- [ ] **⏱️ URL Expiration / TTL**:
-  - Set optional expiration dates for short links (e.g. valid for 7 days).
+
 - [ ] **🔐 User Authentication (JWT)**:
   - Add user registration & login (OAuth2 / JWT).
   - Restrict link management so logged-in users can view, update, or delete their created links.

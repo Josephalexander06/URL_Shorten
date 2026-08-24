@@ -8,7 +8,7 @@ import hashlib
 import models
 from fastapi.responses import RedirectResponse
 import time
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from user_agents import parse
 
 
@@ -59,6 +59,7 @@ async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(
         user_agent.browser.family,
         user_agent.os.family
     ])
+    expire = datetime.now(timezone.utc) + timedelta(days=7)
 
     if url.custom_url:
     
@@ -76,6 +77,7 @@ async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(
             shorten_url = url.custom_url,
             ip_address = client_ip,
             user_agent_info = ua,
+            expire_at = expire,
             count = 1
             )
 
@@ -110,6 +112,7 @@ async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(
         shorten_url = url_slug,
         ip_address = client_ip,
         user_agent_info = ua,
+        expire_at = expire,
         count = 1
     )
 
@@ -137,6 +140,11 @@ def get_url(short:str,request: Request,db:Session=Depends(get_db)):
 
     if not found_url:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Not found")
+    
+    if found_url.expire_at and datetime.now(timezone.utc) > found_url.expire_at:
+        db.delete(found_url)
+        db.commit()
+        raise HTTPException(status_code=404,detail="Item has been expired")
     
     client_ip = find_ip_address(request)
     info = request.headers.get("User-Agent", "")
