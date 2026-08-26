@@ -1,7 +1,6 @@
-from utils import database
 from fastapi import APIRouter, HTTPException, status, Depends,Request
-from utils import schema 
-from utils.database import get_db
+import schema 
+from database import get_db
 from sqlalchemy.orm import Session
 import string
 import hashlib
@@ -10,7 +9,7 @@ from fastapi.responses import RedirectResponse
 import time
 from datetime import datetime, timezone, timedelta
 from user_agents import parse
-
+from . import auth
 
 router = APIRouter(
     prefix="/url",
@@ -46,8 +45,10 @@ def find_ip_address(request):
     
     return client_ip
 
+
+
 @router.post("/",status_code=status.HTTP_201_CREATED)
-async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(get_db)):
+async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(get_db),current_user : int = Depends(auth.get_current_user) ):
 
     reserved_words = ["docs","admin","url","redoc"]
         
@@ -76,6 +77,7 @@ async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(
             original_url = str(url.org_url),
             shorten_url = url.custom_url,
             ip_address = client_ip,
+            user_id = current_user,
             user_agent_info = ua,
             expire_at = expire,
             count = 1
@@ -111,6 +113,7 @@ async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(
         original_url = str(url.org_url),
         shorten_url = url_slug,
         ip_address = client_ip,
+        user_id = current_user,
         user_agent_info = ua,
         expire_at = expire,
         count = 1

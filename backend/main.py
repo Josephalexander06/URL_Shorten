@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from functools import lru_cache
-from utils.database import engine
+from database import engine
 import models
-from router import url
-from utils.config import Settings
+from router import url,users
+from core.config import settings
 
 app =  FastAPI()
 
@@ -11,9 +11,10 @@ models.Base.metadata.create_all(bind=engine)
 
 @lru_cache
 def get_settings():
-    return Settings()
+    return settings()
 
 app.include_router(url.router)
+app.include_router(users.router)
 
 @app.get("/")
 async def root():

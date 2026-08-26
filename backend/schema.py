@@ -1,4 +1,4 @@
-from pydantic import BaseModel, HttpUrl, Field
+from pydantic import BaseModel, HttpUrl, Field, EmailStr
 from typing import Optional
 
 class Create_Url(BaseModel):
@@ -12,3 +12,9 @@ class Create_Url(BaseModel):
     
     class Config:
         from_attribute = True
+
+class User(BaseModel):
+    email : EmailStr
+    password : str = Field(
+        min_length=6
+    )
