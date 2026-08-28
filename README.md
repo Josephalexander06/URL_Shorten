@@ -39,6 +39,8 @@ This project was built as a backend web development learning exercise to underst
 - [x] **🔐 User Authentication (JWT)**:
   - Add user registration & login (OAuth2 / JWT).
   - Restrict link management so logged-in users can view, update, or delete their created links.
+- [x] **⚡ Caching Layer (Redis)**:
+  - Cache short-to-long URL mappings in Redis for near-instant redirects without querying the database every time.
 
 ---
 
@@ -47,8 +49,7 @@ This project was built as a backend web development learning exercise to underst
 These are features planned to enhance the project further:
 
 
-- [ ] **⚡ Caching Layer (Redis)**:
-  - Cache short-to-long URL mappings in Redis for near-instant redirects without querying the database every time.
+
 - [ ] **📱 QR Code Generation**:
   - Automatically generate downloadable QR codes for created short links.
 - [ ] **🛑 Rate Limiting & Anti-Abuse**:

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends,Request
+from fastapi import APIRouter, HTTPException, status, Depends,Request, BackgroundTasks
 import schema 
 from database import get_db
 from sqlalchemy.orm import Session
@@ -10,12 +10,14 @@ import time
 from datetime import datetime, timezone, timedelta
 from user_agents import parse
 from . import auth
+import redis
 
 router = APIRouter(
     prefix="/url",
     tags=["urls"]
 )
 
+redis_client = redis.Redis(host='localhost',port=6379,db=0,decode_responses=True)
 
 BASE62_ALPHA = string.digits + string.ascii_letters
 
@@ -44,6 +46,19 @@ def find_ip_address(request):
         client_ip = None
     
     return client_ip
+
+def update_analytics(short:str,client_ip:str,ua:str,db:Session):
+    found_url = db.query(models.URL).filter(models.URL.shorten_url == short).first()
+
+    if found_url:
+
+        found_url.count = found_url.count + 1
+        found_url.ip_address = client_ip
+        found_url.access_at =datetime.now()
+        found_url.user_agent_info = ua
+
+        db.add(found_url)
+        db.commit()
 
 
 
@@ -123,6 +138,8 @@ async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(
     db.commit()
     db.refresh(db_url)
 
+    redis_client.setex(db_url.shorten_url, 3600, db_url.original_url)
+
     return db_url  
 
 
@@ -136,9 +153,25 @@ async def get_all_urls(db:Session=Depends(get_db)):
 
 
 @router.get("/{short}")
-def get_url(short:str,request: Request,db:Session=Depends(get_db)):
+def get_url(short:str,request: Request,background_tasks:BackgroundTasks,db:Session=Depends(get_db)):
     
+    cached_url = redis_client.get(short)
+
+    client_ip = find_ip_address(request)
+    info = request.headers.get("User-Agent", "")
+    user_agent = parse(info)
+
+    ua = ", ".join([
+        user_agent.browser.family,
+        user_agent.os.family
+    ])
     
+    if cached_url:
+        background_tasks.add_task(update_analytics,short,client_ip,ua,db)
+       
+        return RedirectResponse(url = cached_url,status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+
+
     found_url  = db.query(models.URL).filter(models.URL.shorten_url == short).first()
 
     if not found_url:
@@ -149,15 +182,10 @@ def get_url(short:str,request: Request,db:Session=Depends(get_db)):
         db.commit()
         raise HTTPException(status_code=404,detail="Item has been expired")
     
-    client_ip = find_ip_address(request)
-    info = request.headers.get("User-Agent", "")
-    user_agent = parse(info)
 
-    ua = ", ".join([
-        user_agent.browser.family,
-        user_agent.os.family
-    ])
-    
+    redis_client.setex(short,3600,found_url.original_url)
+
+
     found_url.count = found_url.count + 1
     found_url.ip_address = client_ip
     found_url.access_at =datetime.now()
@@ -165,7 +193,6 @@ def get_url(short:str,request: Request,db:Session=Depends(get_db)):
 
     db.add(found_url)
     db.commit()
-
 
     redirect_url = found_url.original_url
     return RedirectResponse(url = redirect_url,status_code=status.HTTP_307_TEMPORARY_REDIRECT)
