@@ -149,8 +149,8 @@ async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(
 
 
 @router.get("/")
-async def get_all_urls(db:Session=Depends(get_db)):
-    get_url  = db.query(models.URL).all()
+async def get_all_urls(db:Session=Depends(get_db),current_user : int = Depends(auth.get_current_user)):
+    get_url  = db.query(models.URL).filter(models.URL.user_id == current_user).all()
 
     if not get_url:
         raise HTTPException(status_code=404,detail="Not Found")

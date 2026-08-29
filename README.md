@@ -45,17 +45,34 @@ This project was built as a backend web development learning exercise to underst
   - Automatically generate downloadable QR codes for created short links.
 - [x] **🛑 Rate Limiting & Anti-Abuse**:
   - Protect endpoints against spam and malicious requests using Redis-backed rate limiting.
+- [x] **💻 Frontend Interface**:
+  - Built a sleek UI using React/Vite and the ui-ux-pro-max design system.
 
 ---
 
-## 🚀 Pending Features & Future Roadmap
+## 🏃‍♂️ How to Run the Application
 
-These are features planned to enhance the project further:
+The application consists of a FastAPI backend and a React (Vite) frontend. You'll need two terminal windows to run them simultaneously.
 
+### 1. Start the Backend
+It is required to activate the virtual environment before running the server so that dependencies (like `psycopg2`) are found.
 
+```bash
+cd backend
+source .venv/bin/activate
+uvicorn main:app --reload
+```
+*Note on CORS & Errors: The backend handles CORS preflight (`OPTIONS`) requests automatically. If you encounter a `422 Unprocessable Content` error, it means the request payload failed FastAPI's Pydantic validation (e.g., invalid email format or password length).*
 
-- [ ] **💻 Frontend Interface**:
-  - Build a sleek UI using React/Vite or HTML/CSS to allow easy link shortening and analytics display.
+### 2. Start the Frontend
+In a new terminal window:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Then open your browser to `http://localhost:5173`.
 
 ---
 
