@@ -7,13 +7,15 @@ from schema import User
 import models
 from core import security
 from typing import Annotated
+from utilis.dependencies import rate_limiter
 
 
 router = APIRouter(
     prefix="/user",
     tags=["user"],
 )
-@router.post("/register")
+
+@router.post("/register",dependencies=[Depends(rate_limiter)])
 async def register_user(user:User,db:Session=Depends(get_db)):
     email_check = db.query(models.User).filter(models.User.email == user.email).first()
 
@@ -33,7 +35,7 @@ async def register_user(user:User,db:Session=Depends(get_db)):
 
     return {"message":"user created successfully"}
 
-@router.post("/login")
+@router.post("/login",dependencies=[Depends(rate_limiter)])
 def login(data:Annotated[OAuth2PasswordRequestForm,Depends()],db:Session=Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == data.username).first()
     if not user:

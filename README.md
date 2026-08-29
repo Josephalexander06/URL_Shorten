@@ -41,6 +41,10 @@ This project was built as a backend web development learning exercise to underst
   - Restrict link management so logged-in users can view, update, or delete their created links.
 - [x] **⚡ Caching Layer (Redis)**:
   - Cache short-to-long URL mappings in Redis for near-instant redirects without querying the database every time.
+- [x] **📱 QR Code Generation**:
+  - Automatically generate downloadable QR codes for created short links.
+- [x] **🛑 Rate Limiting & Anti-Abuse**:
+  - Protect endpoints against spam and malicious requests using Redis-backed rate limiting.
 
 ---
 
@@ -50,10 +54,6 @@ These are features planned to enhance the project further:
 
 
 
-- [ ] **📱 QR Code Generation**:
-  - Automatically generate downloadable QR codes for created short links.
-- [ ] **🛑 Rate Limiting & Anti-Abuse**:
-  - Protect endpoints against spam and malicious requests using Redis-backed rate limiting.
 - [ ] **💻 Frontend Interface**:
   - Build a sleek UI using React/Vite or HTML/CSS to allow easy link shortening and analytics display.
 

@@ -10,7 +10,12 @@ import time
 from datetime import datetime, timezone, timedelta
 from user_agents import parse
 from . import auth
+import qrcode
+import io
+from fastapi.responses import StreamingResponse
+from utilis.dependencies import rate_limiter
 import redis
+
 
 router = APIRouter(
     prefix="/url",
@@ -18,6 +23,7 @@ router = APIRouter(
 )
 
 redis_client = redis.Redis(host='localhost',port=6379,db=0,decode_responses=True)
+
 
 BASE62_ALPHA = string.digits + string.ascii_letters
 
@@ -61,8 +67,7 @@ def update_analytics(short:str,client_ip:str,ua:str,db:Session):
         db.commit()
 
 
-
-@router.post("/",status_code=status.HTTP_201_CREATED)
+@router.post("/",status_code=status.HTTP_201_CREATED,dependencies=[Depends(rate_limiter)])
 async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(get_db),current_user : int = Depends(auth.get_current_user) ):
 
     reserved_words = ["docs","admin","url","redoc"]
@@ -152,7 +157,7 @@ async def get_all_urls(db:Session=Depends(get_db)):
     return get_url
 
 
-@router.get("/{short}")
+@router.get("/{short}",dependencies=[Depends(rate_limiter)])
 def get_url(short:str,request: Request,background_tasks:BackgroundTasks,db:Session=Depends(get_db)):
     
     cached_url = redis_client.get(short)
@@ -196,4 +201,28 @@ def get_url(short:str,request: Request,background_tasks:BackgroundTasks,db:Sessi
 
     redirect_url = found_url.original_url
     return RedirectResponse(url = redirect_url,status_code=status.HTTP_307_TEMPORARY_REDIRECT)
-    
+
+@router.post("/{short}/qr",dependencies=[Depends(rate_limiter)])
+def qr_create(short:str,request:Request,db:Session = Depends(get_db)):
+    found_url = db.query(models.URL).filter(models.URL.shorten_url == short).first()
+
+    if not found_url:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Not found")
+
+    full_url = f"{request.base_url}/url/{short}"
+
+    qr = qrcode.QRCode(
+        version=1,
+        box_size=10,
+        border=4
+    )
+    qr.add_data(full_url)
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="black",back_color="white")
+
+    buffer = io.BytesIO()
+    img.convert("RGBA").save(buffer ,format="PNG")
+    buffer.seek(0)
+
+    return StreamingResponse(buffer, media_type="image/png")
