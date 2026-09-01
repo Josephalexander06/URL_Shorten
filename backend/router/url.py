@@ -125,8 +125,8 @@ async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(
     
     url_slug = url_to_base62_hash(str(url.org_url))
 
-    while db.query(models.URL).filter(models.URL.shorten_url == url_slug).first():
-          url_slug = url_to_base62_hash(str(url.org_url) + str(time.time()))
+    if db.query(models.URL).filter(models.URL.shorten_url == url_slug).first():
+          url_slug = url_to_base62_hash(str(url.org_url) + str(time.time()) + str(client_ip))
     
 
     db_url = models.URL(

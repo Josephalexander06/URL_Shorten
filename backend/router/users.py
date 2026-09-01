@@ -41,7 +41,7 @@ def login(data:Annotated[OAuth2PasswordRequestForm,Depends()],db:Session=Depends
     if not user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="User not found")
     hashed_password = user.password
-    if not security.verify_password(hashed_password,data.password):
+    if not security.verify_password(data.password, hashed_password):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Incorrect password")
     
     access = security.create_access_token(data={"sub":user.email,"id":user.id})

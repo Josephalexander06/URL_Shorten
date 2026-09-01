@@ -13,8 +13,8 @@ Password_hash = PasswordHash.recommended()
 def get_password_hash(password):
     return Password_hash.hash(password)
 
-def verify_password(plain_password:str,hashed_password:str):
-    return Password_hash.verify(hashed_password, plain_password)
+def verify_password(plain_password:str, hashed_password:str):
+    return Password_hash.verify(plain_password, hashed_password)
 
 def create_access_token(data:dict,expire_delta:timedelta | None = None):
     to_encode = data.copy()
