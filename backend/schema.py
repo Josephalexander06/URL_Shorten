@@ -18,3 +18,14 @@ class User(BaseModel):
     password : str = Field(
         min_length=6
     )
+
+class Update_Url(BaseModel):
+    custom_url : Optional[str] = Field(
+        default=None,
+        min_length=3,
+        max_length=50,
+        pattern=r"^[a-zA-Z0-9_-]+$"
+    )
+    
+    class Config:
+        from_attribute = True

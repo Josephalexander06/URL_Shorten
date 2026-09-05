@@ -112,6 +112,8 @@ Open `http://localhost:5173`, create an account, then create your first link.
 | `GET` | `/url/` | Yes | List the signed-in user's links |
 | `GET` | `/url/{short}` | No | Redirect a visitor to the original URL |
 | `POST` | `/url/{short}/qr` | No | Download a QR-code PNG |
+| `PATCH`| `/url/{short}` | Yes | Update a custom alias |
+| `DELETE`| `/url/{short}` | Yes | Delete a short link |
 
 ## Project structure
 
@@ -141,10 +143,10 @@ Open `http://localhost:5173`, create an account, then create your first link.
 - [x] QR-code generation
 - [x] Alembic initial migration
 - [x] React dashboard
+- [x] Add update and delete link endpoints plus dashboard controls
 
 ### Next to complete
 
-- [ ] Add update and delete link endpoints plus dashboard controls
 - [ ] Add automated API and frontend tests
 - [ ] Check expiry before serving a Redis cache hit and invalidate cache on changes
 - [ ] Store visits in a separate analytics table instead of overwriting the latest visitor

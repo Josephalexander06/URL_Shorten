@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
-import { Link, QrCode, Copy, Trash, ArrowSquareOut, X } from '@phosphor-icons/react';
+import { Link, QrCode, Copy, Trash, ArrowSquareOut, X, PencilSimple } from '@phosphor-icons/react';
 
 interface URLItem {
   id: number;
@@ -22,6 +22,11 @@ const Dashboard: React.FC = () => {
     isOpen: false,
     short: null,
     qrUrl: null,
+  });
+  const [updateModal, setUpdateModal] = useState<{ isOpen: boolean; short: string | null; newAlias: string }>({
+    isOpen: false,
+    short: null,
+    newAlias: '',
   });
   
   const navigate = useNavigate();
@@ -84,6 +89,33 @@ const Dashboard: React.FC = () => {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     // Could add a toast notification here
+  };
+
+  const handleDelete = async (short: string) => {
+    if (!window.confirm('Are you sure you want to delete this link?')) return;
+    try {
+      await api.delete(`/url/${short}`);
+      fetchUrls();
+    } catch (err: any) {
+      console.error('Failed to delete', err);
+      alert(err.response?.data?.detail || 'Failed to delete URL');
+    }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!updateModal.short) return;
+    
+    try {
+      await api.patch(`/url/${updateModal.short}`, {
+        custom_url: updateModal.newAlias
+      });
+      setUpdateModal({ isOpen: false, short: null, newAlias: '' });
+      fetchUrls();
+    } catch (err: any) {
+      console.error('Failed to update', err);
+      alert(err.response?.data?.detail || 'Failed to update URL');
+    }
   };
 
   return (
@@ -181,6 +213,14 @@ const Dashboard: React.FC = () => {
                   
                   <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
                     <button 
+                      onClick={() => setUpdateModal({ isOpen: true, short: url.shorten_url, newAlias: url.shorten_url })}
+                      className="btn-secondary" 
+                      style={{ padding: '8px', border: '1px solid var(--color-border)' }}
+                      title="Edit URL"
+                    >
+                      <PencilSimple size={20} />
+                    </button>
+                    <button 
                       onClick={() => copyToClipboard(fullShortUrl)}
                       className="btn-secondary" 
                       style={{ padding: '8px', border: '1px solid var(--color-border)' }}
@@ -195,6 +235,14 @@ const Dashboard: React.FC = () => {
                       title="QR Code"
                     >
                       <QrCode size={20} />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(url.shorten_url)}
+                      className="btn-secondary" 
+                      style={{ padding: '8px', border: '1px solid var(--color-destructive)', color: 'var(--color-destructive)' }}
+                      title="Delete URL"
+                    >
+                      <Trash size={20} />
                     </button>
                   </div>
                 </div>
@@ -230,6 +278,36 @@ const Dashboard: React.FC = () => {
             ) : (
               <p>Loading...</p>
             )}
+          </div>
+        </div>
+      )}
+      {/* Update Modal */}
+      {updateModal.isOpen && (
+        <div className="modal-overlay" onClick={() => setUpdateModal({ isOpen: false, short: null, newAlias: '' })}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
+              <h3 style={{ margin: 0 }}>Edit Custom Alias</h3>
+              <button onClick={() => setUpdateModal({ isOpen: false, short: null, newAlias: '' })} style={{ background: 'none', border: 'none', color: 'var(--color-foreground)', cursor: 'pointer' }}>
+                <X size={24} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdate}>
+              <div style={{ marginBottom: 'var(--space-md)' }}>
+                <label className="label" htmlFor="newAlias">New Alias</label>
+                <input 
+                  id="newAlias"
+                  type="text" 
+                  className="input" 
+                  value={updateModal.newAlias}
+                  onChange={(e) => setUpdateModal({ ...updateModal, newAlias: e.target.value })}
+                  required
+                />
+              </div>
+              <button type="submit" className="btn-primary" style={{ width: '100%' }}>
+                Save Changes
+              </button>
+            </form>
           </div>
         </div>
       )}

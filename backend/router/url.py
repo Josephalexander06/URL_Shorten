@@ -17,6 +17,9 @@ from utilis.dependencies import rate_limiter
 import redis
 
 
+reserved_words = ["docs","admin","url","redoc"]
+
+
 router = APIRouter(
     prefix="/url",
     tags=["urls"]
@@ -69,8 +72,6 @@ def update_analytics(short:str,client_ip:str,ua:str,db:Session):
 
 @router.post("/",status_code=status.HTTP_201_CREATED,dependencies=[Depends(rate_limiter)])
 async def create_url(url:schema.Create_Url,request:Request,db:Session = Depends(get_db),current_user : int = Depends(auth.get_current_user) ):
-
-    reserved_words = ["docs","admin","url","redoc"]
         
     client_ip = find_ip_address(request)
     info = request.headers.get("User-Agent", "")
@@ -226,3 +227,42 @@ def qr_create(short:str,request:Request,db:Session = Depends(get_db)):
     buffer.seek(0)
 
     return StreamingResponse(buffer, media_type="image/png")
+
+@router.delete("/{short_url}")
+def delete_url(short_url:str,db:Session=Depends(get_db),current_user : int = Depends(auth.get_current_user)):
+    found_url = db.query(models.URL).filter(models.URL.shorten_url == short_url).filter(
+        models.URL.user_id == current_user).first()
+
+    if not found_url:
+        raise HTTPException(status_code=404,detail="Not Found")
+
+    db.delete(found_url)
+    db.commit()
+    redis_client.delete(short_url)
+    return {"ok":True}
+
+
+@router.patch("/{short_url}")
+def update_url(short_url:str,url:schema.Update_Url,db:Session=Depends(get_db),current_user : int = Depends(auth.get_current_user)):
+    found_url = db.query(models.URL).filter(models.URL.shorten_url == short_url).filter(
+        models.URL.user_id == current_user).first()
+
+    if not found_url:
+        raise HTTPException(status_code=404,detail="Not Found")
+    
+    if url.custom_url and url.custom_url != short_url:
+        
+            if url.custom_url.lower() in reserved_words:
+    
+                raise HTTPException(status_code=400,detail="Custom url reserved words cant use")
+    
+            check_custom_url = db.query(models.URL).filter(models.URL.shorten_url == url.custom_url).first()
+    
+            if check_custom_url:
+                raise HTTPException(status_code=409,detail="Custom url already exists")
+            
+            found_url.shorten_url  =  url.custom_url
+
+            db.commit()
+            redis_client.delete(short_url)
+    return {"message":"updated"}
