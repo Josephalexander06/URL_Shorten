@@ -17,7 +17,7 @@ class URL(Base):
     expire_at = Column(TIMESTAMP(timezone=True))
     created_at = Column(TIMESTAMP(timezone=True),server_default=text('now()'))
 
-    user = relationship("User",back_populates="url")
+    user = relationship("User",back_populates="urls")
 
 class User(Base):
     __tablename__ = "users"

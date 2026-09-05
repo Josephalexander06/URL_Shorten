@@ -9,7 +9,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
-from backend.models import Base
+from backend.models import Base, User, URL
 from backend.core.config import settings
 
 
