@@ -1,112 +1,167 @@
-# 🔗 URL Shortener Service (FastAPI + PostgreSQL)
+# URL Shortener
 
-A lightweight, high-performance RESTful API service built with **FastAPI**, **PostgreSQL**, and **SQLAlchemy** to convert long URLs into compact, unique short links with Base62 encoding and HTTP redirects.
+A full-stack URL shortener built as a backend engineering learning project. Authenticated users can create and manage short links from a React dashboard; the FastAPI service redirects visitors efficiently while tracking basic usage data.
 
----
+This project explores API design, authentication, relational data modelling, database migrations, Redis-backed caching and rate limiting, and a TypeScript frontend.
 
-## 📌 Project Overview
+## Highlights
 
-This project was built as a backend web development learning exercise to understand:
-- REST API design with **FastAPI**
-- Database ORM modeling using **SQLAlchemy**
-- Unique hash & encoding algorithms (**Base62**)
-- Environment variable management using **Pydantic Settings**
-- Automatic interactive API documentation with **Swagger UI**
+- Create short links from long URLs with deterministic Base62-style slugs
+- Choose a validated custom alias (`3–50` letters, numbers, `_`, or `-`)
+- Register and sign in with hashed passwords and JWT bearer tokens
+- Keep each user's links separate in their dashboard
+- Redirect short links with HTTP `307 Temporary Redirect`
+- Set a seven-day expiry for newly created links
+- Record a link's click count, last visitor IP, user agent, and access time
+- Cache redirect targets in Redis for one hour
+- Apply Redis-backed IP rate limiting to public and auth routes
+- Generate and download a PNG QR code for every link
+- Manage the PostgreSQL schema with Alembic
 
----
+## Tech stack
 
-## 🛠️ Tech Stack
+| Area | Technology |
+| --- | --- |
+| Backend | Python, FastAPI, SQLAlchemy |
+| Database | PostgreSQL, Alembic |
+| Caching / limits | Redis |
+| Authentication | JWT, OAuth2 password flow, pwdlib |
+| Frontend | React, TypeScript, Vite, Axios |
+| Extras | Pydantic Settings, `qrcode`, `user-agents` |
 
-* **Framework**: [FastAPI](https://fastapi.tiangolo.com/)
-* **Database**: PostgreSQL
-* **ORM**: [SQLAlchemy](https://www.sqlalchemy.org/)
-* **Data Validation & Settings**: [Pydantic v2](https://docs.pydantic.dev/) & `pydantic-settings`
-* **Server**: Uvicorn
-* **Hashing & Encoding**: Python `hashlib` (MD5) + Custom Base62 Encoder
+## Architecture
 
----
+```text
+React + Vite dashboard
+        │ HTTP + Bearer token
+        ▼
+FastAPI API ─────────────► PostgreSQL
+   │                         users and URL records
+   └─────────────────────► Redis
+                             redirect cache and rate-limit counters
+```
 
-## ✨ Features Implemented
+## Getting started
 
-- [x] **URL Shortening (`POST /url/`)**: Takes a long original URL, checks if it already exists in the database, and if not, generates a unique Base62 slug.
-- [x] **✏️ Custom URL Aliases**: Allows users to specify optional custom URL slugs with regex validation (`^[a-zA-Z0-9_-]+$`), length boundaries (3-50 chars), system reserved-word protection (`docs`, `admin`, `redoc`), and database uniqueness constraints.
-- [x] **Collision Handling**: Automatically resolves hash collisions by appending timestamps if a slug conflict occurs.
-- [x] **HTTP Redirection (`GET /url/{short}`)**: Seamlessly redirects the user from the short URL slug to the original destination with a `307 Temporary Redirect`.
-- [x] **List All URLs (`GET /url/`)**: Fetches all shortened URL mappings from the database.
-- [x] **📊 Click Analytics & Visitor Tracking**: Tracks click count per URL and records visitor IP address (`X-Forwarded-For` aware) and User-Agent browser/OS metadata.
-- [x] **Environment Configuration**: Safe credential handling using `.env` files parsed by `pydantic-settings`.
-- [x] **⏱️ URL Expiration / TTL**: Set optional expiration dates for short links (e.g. valid for 7 days).
-- [x] **🔐 User Authentication (JWT)**:
-  - Add user registration & login (OAuth2 / JWT).
-  - Restrict link management so logged-in users can view, update, or delete their created links.
-- [x] **⚡ Caching Layer (Redis)**:
-  - Cache short-to-long URL mappings in Redis for near-instant redirects without querying the database every time.
-- [x] **📱 QR Code Generation**:
-  - Automatically generate downloadable QR codes for created short links.
-- [x] **🛑 Rate Limiting & Anti-Abuse**:
-  - Protect endpoints against spam and malicious requests using Redis-backed rate limiting.
-- [x] **💻 Frontend Interface**:
-  - Built a sleek UI using React/Vite and the ui-ux-pro-max design system.
+### Prerequisites
 
----
+- Python 3.10+
+- Node.js 20+
+- PostgreSQL
+- Redis running locally on port `6379`
 
-## 🏃‍♂️ How to Run the Application
+### 1. Configure the backend
 
-The application consists of a FastAPI backend and a React (Vite) frontend. You'll need two terminal windows to run them simultaneously.
+Create `backend/.env`. It is intentionally ignored by Git—never commit real credentials.
 
-### 1. Start the Backend
-It is required to activate the virtual environment before running the server so that dependencies (like `psycopg2`) are found.
+```env
+DB_URL=postgresql+psycopg2://postgres:your-password@localhost:5432/url_shortener
+SECRET_KEY=replace-with-a-long-random-secret
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=15
+```
+
+Install the Python dependencies in a virtual environment:
+
+```bash
+python -m venv backend/.venv
+# Create the virtual-environment folder once
+python -m venv backend/.venv
+
+# Activate it every time you open a new terminal
+source backend/.venv/bin/activate
+pip install -r backend/requiremnts.txt
+```
+
+> The second command lists runtime packages currently used by the application that should be consolidated into `backend/requiremnts.txt` as part of the cleanup checklist below.
+
+Apply the database migration from the repository root:
+
+```bash
+alembic upgrade head
+```
+
+Start the API:
 
 ```bash
 cd backend
-source .venv/bin/activate
 uvicorn main:app --reload
 ```
-*Note on CORS & Errors: The backend handles CORS preflight (`OPTIONS`) requests automatically. If you encounter a `422 Unprocessable Content` error, it means the request payload failed FastAPI's Pydantic validation (e.g., invalid email format or password length).*
 
-### 2. Start the Frontend
-In a new terminal window:
+The API is available at `http://127.0.0.1:8000`, with interactive Swagger documentation at `http://127.0.0.1:8000/docs`.
+
+### 2. Start the frontend
+
+In a second terminal:
 
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Then open your browser to `http://localhost:5173`.
 
----
+Open `http://localhost:5173`, create an account, then create your first link.
 
-## 📁 Directory Structure
+## API overview
+
+| Method | Endpoint | Authentication | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/user/register` | No | Create an account |
+| `POST` | `/user/login` | No | Receive a JWT access token (OAuth2 form data) |
+| `POST` | `/url/` | Yes | Create a short link or custom alias |
+| `GET` | `/url/` | Yes | List the signed-in user's links |
+| `GET` | `/url/{short}` | No | Redirect a visitor to the original URL |
+| `POST` | `/url/{short}/qr` | No | Download a QR-code PNG |
+
+## Project structure
 
 ```text
-url-shorten/
-├── README.md               # Project Documentation
-└── backend/
-    ├── .env                # Environment variables (database URL, secret keys)
-    ├── main.py             # FastAPI entry point
-    ├── models.py           # SQLAlchemy database tables
-    ├── requiremnt.txt      # Python dependencies
-    ├── router/
-    │   └── url.py          # API route handlers (/url endpoints)
-    └── utils/
-        ├── config.py       # Pydantic BaseSettings config
-        ├── database.py     # Database engine & session setup
-        └── schema.py       # Pydantic request/response schemas
+.
+├── alembic/                  # Database migration environment and revisions
+├── backend/
+│   ├── core/                 # Application settings and JWT/password helpers
+│   ├── router/               # Authentication and URL route handlers
+│   ├── utilis/               # Shared dependencies, including rate limiting
+│   ├── database.py           # SQLAlchemy engine and session dependency
+│   ├── models.py             # User and URL database models
+│   └── schema.py             # Request validation models
+└── frontend/src/
+    ├── pages/                # Landing, auth, and dashboard screens
+    └── api.ts                # Axios client and JWT request interceptor
 ```
 
-## 📑 API Endpoints Summary
+## Implementation status
 
-| Method | Endpoint | Description | Sample Body |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/url/` | Create a shortened URL (auto Base62 or custom slug) | `{"org_url": "https://example.com", "custom_url": "my-alias"}` |
-| `GET` | `/url/` | Retrieve all shortened URLs | *None* |
-| `GET` | `/url/{short}` | Redirect to original URL | *None* |
+### Complete
 
-Interactive API Documentation (Swagger UI) is available at: **`http://127.0.0.1:8000/docs`**
+- [x] JWT registration and login
+- [x] User-owned links and custom aliases
+- [x] Redis redirect caching and rate limiting
+- [x] Link expiry and basic click tracking
+- [x] QR-code generation
+- [x] Alembic initial migration
+- [x] React dashboard
 
----
+### Next to complete
 
-## 📝 Personal Study Note
+- [ ] Add update and delete link endpoints plus dashboard controls
+- [ ] Add automated API and frontend tests
+- [ ] Check expiry before serving a Redis cache hit and invalidate cache on changes
+- [ ] Store visits in a separate analytics table instead of overwriting the latest visitor
+- [ ] Replace MD5-derived slugs with securely random, collision-safe IDs
+- [ ] Move Redis configuration to environment settings and handle Redis outages gracefully
+- [ ] Consolidate all backend runtime packages in `backend/requiremnts.txt`
+- [ ] Add Docker Compose for API, PostgreSQL, and Redis
+- [ ] Add `.env.example`, screenshots, and deployment instructions
+- [ ] Deploy a live demo and add its URL here
 
-This repository is developed for **personal learning and backend practice**.
+## Notes and current limitations
 
+- Links are globally unique; creating the same original URL returns the existing mapping.
+- Expiry is currently fixed at seven days when a link is created.
+- The analytics fields represent the latest visit and total click count, rather than a full visit history.
+- The frontend API URL is currently fixed to `http://localhost:8000`; make it an environment variable before deployment.
+
+## Learning goals
+
+This repository was built to practice production-relevant backend concepts—not only CRUD endpoints. The next steps above are intentionally focused on reliability, security, testing, and deployment: the work that turns a finished learning project into a stronger portfolio project.
